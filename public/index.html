@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Secret Keeper</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="page">
+
+  <header class="header">
+    <div class="header-label">Secret Keeper</div>
+    <h1>Simultaneous reveal for PBEM games</h1>
+    <p>Both players commit to a secret independently — neither sees the other's until both have submitted. No accounts, no passwords, all access via magic links. Verification log available for 14 days after reveal.</p>
+  </header>
+
+  <div class="card">
+
+    <div class="error-box" id="errorBox" role="alert"></div>
+
+    <!-- Game context -->
+    <div class="section-label">Game context</div>
+
+    <div class="field">
+      <div class="field-label">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+          <rect x="2" y="3" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+          <path d="M5 3V2M11 3V2M2 7h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+        Session title
+      </div>
+      <input type="text" id="title" placeholder="e.g. Twilight Imperium Round 4 — Strategy Cards" autocomplete="off">
+    </div>
+
+    <hr class="divider">
+
+    <!-- Your secret -->
+    <div class="section-label">Your secret</div>
+
+    <div class="field">
+      <div class="field-label">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+          <rect x="5" y="7" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.3"/>
+          <path d="M5.5 7V5.5a2.5 2.5 0 0 1 5 0V7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+        Your secret
+      </div>
+      <textarea id="p1Secret" maxlength="1000" placeholder="Enter your secret here — it's locked the moment you submit and cannot be changed."></textarea>
+      <div class="field-hint">Cannot be edited after submission — that's the point.</div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- Participants -->
+    <div class="section-label">Participants</div>
+
+    <div class="field">
+      <div class="field-label">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+          <circle cx="8" cy="5" r="2.5" stroke="currentColor" stroke-width="1.3"/>
+          <path d="M3 13c0-2.5 2.2-4 5-4s5 1.5 5 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+        Your email
+      </div>
+      <input type="email" id="p1Email" placeholder="you@example.com" autocomplete="email">
+      <div class="field-hint">You'll receive a timestamped receipt confirming your secret is escrowed.</div>
+    </div>
+
+    <div class="field">
+      <div class="field-label">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+          <circle cx="8" cy="5" r="2.5" stroke="currentColor" stroke-width="1.3"/>
+          <path d="M3 13c0-2.5 2.2-4 5-4s5 1.5 5 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+          <path d="M11 8l1.5 1.5L14 8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Respondent's email
+      </div>
+      <input type="email" id="p2Email" placeholder="opponent@example.com" autocomplete="off">
+      <div class="field-hint">They receive a magic link to submit their secret. If no response after 7 days the secret keeper is deleted.</div>
+    </div>
+
+    <div class="field">
+      <div class="field-label">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+          <circle cx="5" cy="5" r="2" stroke="currentColor" stroke-width="1.3"/>
+          <circle cx="11" cy="5" r="2" stroke="currentColor" stroke-width="1.3"/>
+          <path d="M1 13c0-2 1.8-3 4-3m6 3c0-2-1.8-3-4-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+        Observer emails
+        <span class="optional">(optional)</span>
+      </div>
+      <input type="text" id="observerEmailsRaw" placeholder="referee@example.com, judge@example.com" autocomplete="off">
+      <div class="field-hint">Comma-separated. Observers receive the final reveal but cannot submit secrets.</div>
+    </div>
+
+    <label class="checkbox-row">
+      <input type="checkbox" id="notifyObservers">
+      <span>Notify observers now — they'll receive an email when this session is created, then again at reveal</span>
+    </label>
+
+    <button class="btn" id="submitBtn" type="button">
+      <span>Escrow my secret</span>
+      <div class="spinner"></div>
+    </button>
+
+  </div>
+</div>
+
+<footer class="footer">
+  <p>Questions or feedback? <a id="contactLink" href="#">get in touch</a></p>
+</footer>
+
+<script>
+  (function() {
+    const u = 'strategija', d = 'gmail.com';
+    const a = document.getElementById('contactLink');
+    a.href = 'mailto:' + u + '@' + d;
+    a.textContent = u + '\u0040' + d;
+  })();
+</script>
+
+<script>
+  const btn      = document.getElementById('submitBtn');
+  const errorBox = document.getElementById('errorBox');
+
+  function showError(msg) {
+    errorBox.textContent = msg;
+    errorBox.classList.add('visible');
+    errorBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function clearError() {
+    errorBox.textContent = '';
+    errorBox.classList.remove('visible');
+  }
+
+  function setLoading(on) {
+    btn.classList.toggle('loading', on);
+    btn.disabled = on;
+  }
+
+  btn.addEventListener('click', async () => {
+    clearError();
+
+    const title             = document.getElementById('title').value.trim();
+    const p1Secret          = document.getElementById('p1Secret').value.trim();
+    const p1Email           = document.getElementById('p1Email').value.trim();
+    const p2Email           = document.getElementById('p2Email').value.trim();
+    const observerEmailsRaw = document.getElementById('observerEmailsRaw').value.trim();
+    const notifyObservers   = document.getElementById('notifyObservers').checked;
+
+    if (!title)    return showError('Please enter a session title.');
+    if (!p1Secret) return showError('Please enter your secret.');
+    if (!p1Email)  return showError('Please enter your email address.');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p1Email)) return showError('Please enter a valid email address.');
+    if (!p2Email)  return showError("Please enter the respondent's email address.");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p2Email)) return showError("Please enter a valid email address for the respondent.");
+    if (p1Email.toLowerCase() === p2Email.toLowerCase()) {
+      return showError('Your email and the respondent\'s email must be different.');
+    }
+
+    setLoading(true);
+
+    try {
+      const res  = await fetch('/api/create', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ title, p1Secret, p1Email, p2Email, observerEmailsRaw, notifyObservers }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        return showError(data.error ?? 'Something went wrong. Please try again.');
+      }
+
+      const params = new URLSearchParams({
+        respondent: data.respondentEmail,
+        observers:  data.observerCount,
+      });
+      window.location.href = '/success.html?' + params;
+
+    } catch (err) {
+      showError('Network error. Please check your connection and try again.');
+    } finally {
+      setLoading(false);
+    }
+  });
+</script>
+</body>
+</html>

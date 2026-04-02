@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Secret Keeper — Verification Log</title>
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    .secret-block {
+      background: var(--color-background-tertiary, #f5f5f0);
+      border: 0.5px solid var(--color-border-tertiary);
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 14px;
+      color: var(--color-text-primary);
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.6;
+    }
+
+    .meta-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-bottom: 8px;
+    }
+
+    .meta-row .player-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--color-text-primary);
+    }
+
+    .meta-row .timestamp {
+      font-size: 12px;
+      color: var(--color-text-secondary);
+      opacity: 0.8;
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="header">
+    <div class="header-label">Secret Keeper</div>
+    <h1>Verification log</h1>
+    <p id="headerSession">Both secrets are shown as committed. Neither was visible to the other player until both had submitted.</p>
+  </header>
+
+  <div id="loadingCard" class="card" style="text-align:center;">
+    <p style="font-size:14px; color:var(--color-text-secondary);">Loading…</p>
+  </div>
+
+  <div id="errorCard" class="card" style="display:none;">
+    <div class="error-box visible" id="errorMsg" role="alert"></div>
+    <a href="/" style="display:block; text-align:center; font-size:13px; color:var(--color-text-secondary); text-decoration:none; opacity:0.8; margin-top:4px;">
+      Create a new session
+    </a>
+  </div>
+
+  <div id="logCard" class="card" style="display:none;">
+
+    <div class="section-label">Session</div>
+    <p id="logTitle" style="font-size:15px; font-weight:500; color:var(--color-text-primary); margin-bottom:4px;"></p>
+    <p id="logRevealedAt" style="font-size:12px; color:var(--color-text-secondary); opacity:0.8; margin-bottom:20px;"></p>
+
+    <hr class="divider">
+
+    <div class="section-label">Player 1 secret</div>
+    <div class="meta-row">
+      <span class="player-label" id="p1Email"></span>
+      <span class="timestamp" id="p1SubmittedAt"></span>
+    </div>
+    <div class="secret-block" id="p1Secret"></div>
+
+    <hr class="divider">
+
+    <div class="section-label">Player 2 secret</div>
+    <div class="meta-row">
+      <span class="player-label" id="p2Email"></span>
+      <span class="timestamp" id="p2SubmittedAt"></span>
+    </div>
+    <div class="secret-block" id="p2Secret"></div>
+
+    <hr class="divider">
+
+    <div class="section-label">Integrity</div>
+    <p style="font-size:13px; color:var(--color-text-secondary); line-height:1.7;">
+      Player 1's secret was committed at session creation and was never modifiable.
+      Player 2's secret was committed at submission time. Neither was visible to the other
+      until both had submitted.
+    </p>
+
+  </div>
+</div>
+
+<script>
+  const params   = new URLSearchParams(location.search);
+  const logToken = params.get('token') ?? '';
+
+  function fmt(iso) {
+    if (!iso) return '';
+    return new Date(iso).toLocaleString(undefined, {
+      month: 'long', day: 'numeric', year: 'numeric',
+      hour: 'numeric', minute: '2-digit',
+    });
+  }
+
+  async function loadLog() {
+    if (!logToken) {
+      showError('No log token provided.');
+      return;
+    }
+
+    try {
+      const res  = await fetch('/api/log/' + encodeURIComponent(logToken));
+      const data = await res.json();
+
+      if (!res.ok) {
+        showError(data.error ?? 'This log is unavailable or has expired.');
+        return;
+      }
+
+      document.getElementById('logTitle').textContent      = data.title;
+      document.getElementById('logRevealedAt').textContent = 'Revealed ' + fmt(data.revealedAt);
+
+      document.getElementById('p1Email').textContent       = data.p1Email ?? 'Player 1';
+      document.getElementById('p1SubmittedAt').textContent = 'Submitted ' + fmt(data.p1SubmittedAt);
+      document.getElementById('p1Secret').textContent      = data.p1Secret;
+
+      document.getElementById('p2Email').textContent       = data.p2Email ?? 'Player 2';
+      document.getElementById('p2SubmittedAt').textContent = 'Submitted ' + fmt(data.p2SubmittedAt);
+      document.getElementById('p2Secret').textContent      = data.p2Secret;
+
+      document.getElementById('loadingCard').style.display = 'none';
+      document.getElementById('logCard').style.display     = '';
+
+    } catch (err) {
+      showError('Network error. Please check your connection and try again.');
+    }
+  }
+
+  function showError(msg) {
+    document.getElementById('loadingCard').style.display = 'none';
+    document.getElementById('errorMsg').textContent      = msg;
+    document.getElementById('errorCard').style.display  = '';
+  }
+
+  loadLog();
+</script>
+</body>
+</html>

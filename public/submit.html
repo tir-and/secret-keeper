@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Secret Keeper — Submit Secret</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="page">
+
+  <header class="header">
+    <div class="header-label">Secret Keeper</div>
+    <h1 id="pageTitle">Submit your secret</h1>
+    <p>Your secret is locked the moment you submit. The reveal happens simultaneously — neither player sees the other's secret until both have submitted.</p>
+  </header>
+
+  <div class="card" id="mainCard">
+
+    <div class="error-box" id="errorBox" role="alert"></div>
+
+    <div class="section-label">Session</div>
+
+    <p id="sessionTitle" style="font-size:14px; color:var(--color-text-primary); margin-bottom:6px;"></p>
+    <p id="expiresNote" style="font-size:12px; color:var(--color-text-secondary); opacity:0.8; margin-bottom:20px;"></p>
+
+    <hr class="divider">
+
+    <div class="section-label">Your secret</div>
+
+    <div class="field">
+      <div class="field-label">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+          <rect x="5" y="7" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.3"/>
+          <path d="M5.5 7V5.5a2.5 2.5 0 0 1 5 0V7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+        Your secret
+      </div>
+      <textarea id="p2Secret" maxlength="1000" placeholder="Enter your secret here — it cannot be changed after submission."></textarea>
+      <div class="field-hint">Cannot be edited after submission — that's the point.</div>
+    </div>
+
+    <div class="field">
+      <div class="field-label">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+          <circle cx="8" cy="5" r="2.5" stroke="currentColor" stroke-width="1.3"/>
+          <path d="M3 13c0-2.5 2.2-4 5-4s5 1.5 5 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+        Your email
+      </div>
+      <input type="email" id="p2Email" placeholder="you@example.com" autocomplete="email">
+      <div class="field-hint">The final reveal with both secrets will be sent here.</div>
+    </div>
+
+    <button class="btn" id="submitBtn" type="button">
+      <span>Submit my secret</span>
+      <div class="spinner"></div>
+    </button>
+
+  </div>
+</div>
+
+<script>
+  const params = new URLSearchParams(location.search);
+  const token  = params.get('token') ?? '';
+
+  const btn      = document.getElementById('submitBtn');
+  const errorBox = document.getElementById('errorBox');
+
+  function showError(msg) {
+    errorBox.textContent = msg;
+    errorBox.classList.add('visible');
+    errorBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function clearError() {
+    errorBox.textContent = '';
+    errorBox.classList.remove('visible');
+  }
+
+  function setLoading(on) {
+    btn.classList.toggle('loading', on);
+    btn.disabled = on;
+  }
+
+  async function loadSession() {
+    if (!token) {
+      window.location.href = '/expired.html';
+      return;
+    }
+
+    try {
+      const res  = await fetch('/api/secret/' + encodeURIComponent(token));
+      const data = await res.json();
+
+      if (!res.ok) {
+        window.location.href = '/expired.html';
+        return;
+      }
+
+      document.getElementById('sessionTitle').textContent = data.title;
+
+      if (data.expiresAt) {
+        const d = new Date(data.expiresAt);
+        document.getElementById('expiresNote').textContent =
+          'Expires ' + d.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
+      }
+    } catch (err) {
+      window.location.href = '/expired.html';
+    }
+  }
+
+  btn.addEventListener('click', async () => {
+    clearError();
+
+    const p2Secret = document.getElementById('p2Secret').value.trim();
+    const p2Email  = document.getElementById('p2Email').value.trim();
+
+    if (!p2Secret) return showError('Please enter your secret.');
+    if (!p2Email)  return showError('Please enter your email address.');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p2Email)) return showError('Please enter a valid email address.');
+
+    setLoading(true);
+
+    try {
+      const res  = await fetch('/api/submit', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ token, p2Secret, p2Email }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        if (res.status === 404 || res.status === 410) {
+          window.location.href = '/expired.html';
+          return;
+        }
+        return showError(data.error ?? 'Something went wrong. Please try again.');
+      }
+
+      window.location.href = '/complete.html';
+
+    } catch (err) {
+      showError('Network error. Please check your connection and try again.');
+    } finally {
+      setLoading(false);
+    }
+  });
+
+  loadSession();
+</script>
+</body>
+</html>

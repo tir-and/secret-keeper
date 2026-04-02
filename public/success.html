@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Secret Keeper — Session Created</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="page">
+
+  <header class="header">
+    <div class="header-label">Secret Keeper</div>
+    <h1>Your secret is escrowed</h1>
+    <p>The session has been created. Neither secret will be revealed until both players have submitted.</p>
+  </header>
+
+  <div class="card">
+
+    <div class="section-label">What happens next</div>
+
+    <p style="font-size:14px; color:var(--color-text-secondary); line-height:1.7; margin-bottom:18px;">
+      An invitation has been sent to <strong id="respondentEmail" style="color:var(--color-text-primary);"></strong>.
+      They have 7 days to submit their secret. Once they do, both secrets are revealed simultaneously and
+      emailed to all participants.
+    </p>
+
+    <hr class="divider">
+
+    <div id="observerNote" style="display:none;">
+      <div class="section-label">Observers</div>
+      <p style="font-size:14px; color:var(--color-text-secondary); line-height:1.7; margin-bottom:18px;">
+        <span id="observerCount"></span> observer(s) will receive the final reveal email.
+      </p>
+      <hr class="divider">
+    </div>
+
+    <div class="section-label">Confirmation sent</div>
+    <p style="font-size:14px; color:var(--color-text-secondary); line-height:1.7;">
+      A timestamped receipt confirming your secret is escrowed has been sent to your email address.
+      Keep it — it proves your secret was committed before the respondent submitted theirs.
+    </p>
+
+    <hr class="divider">
+
+    <a href="/" style="display:block; text-align:center; font-size:13px; color:var(--color-text-secondary); text-decoration:none; opacity:0.8;">
+      Create another session
+    </a>
+
+  </div>
+</div>
+
+<script>
+  const params = new URLSearchParams(location.search);
+  const respondent = params.get('respondent') ?? '';
+  const observers  = parseInt(params.get('observers') ?? '0', 10);
+
+  document.getElementById('respondentEmail').textContent = respondent || 'your opponent';
+
+  if (observers > 0) {
+    document.getElementById('observerNote').style.display = '';
+    document.getElementById('observerCount').textContent = observers;
+  }
+</script>
+</body>
+</html>
