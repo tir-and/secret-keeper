@@ -41,7 +41,7 @@ If Player 2 does not respond within 7 days, the session is deleted and no reveal
   secret/[token].js   — GET:  load session info for P2 submit page
   log/[logToken].js   — GET:  load verification log
 /lib
-  storage.js          — Vercel Postgres queries and transactions
+  storage.js          — Neon Postgres queries and transactions
   email.js            — Resend email sending (4 email types)
 /public
   index.html          — Session creation form (Player 1)
