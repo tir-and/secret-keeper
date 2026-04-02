@@ -72,28 +72,6 @@ Set these in the Vercel dashboard under Project → Settings → Environment Var
 
 ---
 
-## Local development
-
-```bash
-npm install
-npx vercel dev
-```
-
-Requires the [Vercel CLI](https://vercel.com/docs/cli) and a `.env.local` file with the environment variables listed above.
-
----
-
-## Deployment
-
-The app deploys automatically when you push to `main` via the Vercel GitHub integration.
-
-Manual deploy:
-```bash
-npx vercel --prod
-```
-
----
-
 ## Design decisions
 
 - **Atomic reveal:** the two-phase commit is implemented as a Postgres transaction with `FOR UPDATE` row locking — the reveal is all-or-nothing
