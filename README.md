@@ -4,7 +4,7 @@ A lightweight web app that solves the simultaneous reveal problem in play-by-ema
 
 No accounts. No passwords. All access via magic links.
 
-**Live:** https://secretkeeper.vercel.app
+**Live:** https://secretkeeper.win
 
 ---
 
