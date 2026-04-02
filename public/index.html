@@ -46,7 +46,7 @@
         </svg>
         Your secret
       </div>
-      <textarea id="p1Secret" maxlength="1000" placeholder="Enter your secret here — it's locked the moment you submit and cannot be changed."></textarea>
+      <textarea id="p1Secret" placeholder="Enter your secret here — it's locked the moment you submit and cannot be changed."></textarea>
       <div class="field-hint">Cannot be edited after submission — that's the point.</div>
     </div>
 
@@ -64,7 +64,7 @@
         Your email
       </div>
       <input type="email" id="p1Email" placeholder="you@example.com" autocomplete="email">
-      <div class="field-hint">You'll receive a timestamped receipt confirming your secret is escrowed.</div>
+      <div class="field-hint">You'll receive a timestamped receipt confirming your secret is sealed.</div>
     </div>
 
     <div class="field">
@@ -100,25 +100,12 @@
     </label>
 
     <button class="btn" id="submitBtn" type="button">
-      <span>Escrow my secret</span>
+      <span>Seal my secret</span>
       <div class="spinner"></div>
     </button>
 
   </div>
 </div>
-
-<footer class="footer">
-  <p>Questions or feedback? <a id="contactLink" href="#">get in touch</a></p>
-</footer>
-
-<script>
-  (function() {
-    const u = 'strategija', d = 'gmail.com';
-    const a = document.getElementById('contactLink');
-    a.href = 'mailto:' + u + '@' + d;
-    a.textContent = u + '\u0040' + d;
-  })();
-</script>
 
 <script>
   const btn      = document.getElementById('submitBtn');
@@ -153,9 +140,7 @@
     if (!title)    return showError('Please enter a session title.');
     if (!p1Secret) return showError('Please enter your secret.');
     if (!p1Email)  return showError('Please enter your email address.');
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p1Email)) return showError('Please enter a valid email address.');
     if (!p2Email)  return showError("Please enter the respondent's email address.");
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p2Email)) return showError("Please enter a valid email address for the respondent.");
     if (p1Email.toLowerCase() === p2Email.toLowerCase()) {
       return showError('Your email and the respondent\'s email must be different.');
     }

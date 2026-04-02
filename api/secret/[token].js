@@ -24,6 +24,7 @@ module.exports = async function handler(req, res) {
 
   return res.status(200).json({
     title: session.title,
+    p2Email: session.p2_email,
     expiresAt: session.expires_at,
   });
 };

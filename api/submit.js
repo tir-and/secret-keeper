@@ -1,6 +1,6 @@
 'use strict';
 
-const { revealSession, cleanupExpired } = require('../lib/storage');
+const { revealSession, getSessionByP2Token, cleanupExpired } = require('../lib/storage');
 const { sendFinalReveal } = require('../lib/email');
 
 module.exports = async function handler(req, res) {
@@ -8,7 +8,7 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { token, p2Secret, p2Email } = req.body ?? {};
+  const { token, p2Secret } = req.body ?? {};
 
   if (!token || typeof token !== 'string') {
     return res.status(400).json({ error: 'Token is required.' });
@@ -16,22 +16,22 @@ module.exports = async function handler(req, res) {
   if (!p2Secret || typeof p2Secret !== 'string' || !p2Secret.trim()) {
     return res.status(400).json({ error: 'Your secret is required.' });
   }
-  if (!p2Email || typeof p2Email !== 'string' || !p2Email.trim()) {
-    return res.status(400).json({ error: 'Your email address is required.' });
-  }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p2Email.trim())) {
-    return res.status(400).json({ error: 'Please enter a valid email address.' });
-  }
 
   // Non-blocking cleanup
   cleanupExpired().catch(() => {});
+
+  // Look up the session to get p2_email — it was set when P1 created the session
+  const session = await getSessionByP2Token(token).catch(() => null);
+  if (!session) {
+    return res.status(404).json({ error: 'Session not found or expired.' });
+  }
 
   let result;
   try {
     result = await revealSession({
       p2Token: token,
       p2Secret: p2Secret.trim(),
-      p2Email: p2Email.trim(),
+      p2Email: session.p2_email,
     });
   } catch (err) {
     console.error('revealSession error:', err);
@@ -52,15 +52,15 @@ module.exports = async function handler(req, res) {
 
   // Send final reveal to all parties — non-blocking, reveal is already committed
   sendFinalReveal({
-    p1Email:       s.p1_email,
-    p2Email:       s.p2_email,
+    p1Email:        s.p1_email,
+    p2Email:        s.p2_email,
     observerEmails: s.observer_emails,
-    title:         s.title,
-    p1Secret:      s.p1_secret,
-    p2Secret:      s.p2_secret,
-    logToken:      s.log_token,
-    p1SubmittedAt: s.p1_submitted_at,
-    p2SubmittedAt: s.p2_submitted_at,
+    title:          s.title,
+    p1Secret:       s.p1_secret,
+    p2Secret:       s.p2_secret,
+    logToken:       s.log_token,
+    p1SubmittedAt:  s.p1_submitted_at,
+    p2SubmittedAt:  s.p2_submitted_at,
   }).catch(() => {});
 
   return res.status(200).json({ ok: true });

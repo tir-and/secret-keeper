@@ -36,20 +36,8 @@
         </svg>
         Your secret
       </div>
-      <textarea id="p2Secret" maxlength="1000" placeholder="Enter your secret here — it cannot be changed after submission."></textarea>
+      <textarea id="p2Secret" placeholder="Enter your secret here — it cannot be changed after submission."></textarea>
       <div class="field-hint">Cannot be edited after submission — that's the point.</div>
-    </div>
-
-    <div class="field">
-      <div class="field-label">
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-          <circle cx="8" cy="5" r="2.5" stroke="currentColor" stroke-width="1.3"/>
-          <path d="M3 13c0-2.5 2.2-4 5-4s5 1.5 5 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
-        </svg>
-        Your email
-      </div>
-      <input type="email" id="p2Email" placeholder="you@example.com" autocomplete="email">
-      <div class="field-hint">The final reveal with both secrets will be sent here.</div>
     </div>
 
     <button class="btn" id="submitBtn" type="button">
@@ -114,11 +102,8 @@
     clearError();
 
     const p2Secret = document.getElementById('p2Secret').value.trim();
-    const p2Email  = document.getElementById('p2Email').value.trim();
 
     if (!p2Secret) return showError('Please enter your secret.');
-    if (!p2Email)  return showError('Please enter your email address.');
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p2Email)) return showError('Please enter a valid email address.');
 
     setLoading(true);
 
@@ -126,7 +111,7 @@
       const res  = await fetch('/api/submit', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ token, p2Secret, p2Email }),
+        body:    JSON.stringify({ token, p2Secret }),
       });
 
       const data = await res.json();
