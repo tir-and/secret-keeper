@@ -26,7 +26,7 @@ If Player 2 does not respond within 7 days, the session is deleted and no reveal
 |---|---|
 | Frontend | Static HTML/CSS/JS (`/public`) |
 | API | Serverless functions (`/api`) |
-| Storage | Vercel Postgres |
+| Storage | Neon |
 | Email | Resend |
 | Hosting | Vercel |
 
