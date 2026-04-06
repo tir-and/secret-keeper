@@ -67,10 +67,22 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: 'Failed to create session. Please try again.' });
   }
 
-  for (const p of participants) {
-    sendMultiPlayerInvite(p.email, session.title, p.token, session.expires_at, participants.length)
-      .catch(err => console.error('sendMultiPlayerInvite error for', p.email, ':', err));
+  const sendResults = await Promise.allSettled(
+    participants.map(p =>
+      sendMultiPlayerInvite(p.email, session.title, p.token, session.expires_at, participants.length)
+    )
+  );
+
+  const emailFailures = sendResults
+    .map((r, i) => r.status === 'rejected' ? participants[i].email : null)
+    .filter(Boolean);
+
+  if (emailFailures.length > 0) {
+    console.error('sendMultiPlayerInvite failed for:', emailFailures);
   }
 
-  return res.status(200).json({ playerCount: participants.length });
+  return res.status(200).json({
+    playerCount: participants.length,
+    emailFailures: emailFailures.length > 0 ? emailFailures : undefined,
+  });
 };

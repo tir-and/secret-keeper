@@ -113,8 +113,9 @@
 
     <div id="revealedSection" style="display:none;">
       <hr class="divider">
+      <div class="error-box" id="emailWarningBox" role="alert" style="margin-bottom:12px;"></div>
       <div class="reveal-note">
-        <p>All secrets revealed — check your email.</p>
+        <p id="revealedMsg">All secrets revealed — check your email.</p>
         <a id="logLink" href="#">View verification log →</a>
       </div>
     </div>
@@ -188,6 +189,15 @@
       revealedSection.style.display = '';
       document.getElementById('logLink').href =
         `/multi-log.html?token=${encodeURIComponent(s.logToken)}`;
+      const warningBox = document.getElementById('emailWarningBox');
+      if (s.emailWarning) {
+        warningBox.textContent = 'The reveal was recorded but email delivery failed. Use the log link below to view all secrets.';
+        warningBox.classList.add('visible');
+        document.getElementById('revealedMsg').textContent = 'All secrets revealed.';
+      } else {
+        warningBox.classList.remove('visible');
+        document.getElementById('revealedMsg').textContent = 'All secrets revealed — check your email.';
+      }
       pollNote.style.display = 'none';
       stopPolling();
     } else {

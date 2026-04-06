@@ -229,6 +229,16 @@
 
       if (!res.ok) return showError(data.error ?? 'Something went wrong. Please try again.');
 
+      if (data.emailFailures && data.emailFailures.length > 0) {
+        const all = data.emailFailures.length === data.playerCount;
+        const list = data.emailFailures.join(', ');
+        showError(
+          `Session created but invite emails failed to send (email service may be down). Please try again later.`
+        );
+        setLoading(false);
+        return;
+      }
+
       window.location.href = '/multi-success.html?' + new URLSearchParams({ players: data.playerCount });
     } catch (_) {
       showError('Network error. Please check your connection and try again.');

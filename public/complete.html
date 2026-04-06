@@ -15,6 +15,8 @@
     <p>Both secrets have been submitted. The simultaneous reveal has been sent to all participants.</p>
   </header>
 
+  <div class="error-box" id="emailWarningBox" role="alert" style="max-width:580px; margin:0 auto 16px;"></div>
+
   <div class="card">
 
     <div class="section-label">What was sent</div>
@@ -35,5 +37,12 @@
 
   </div>
 </div>
+<script>
+  if (new URLSearchParams(location.search).get('emailWarning')) {
+    const box = document.getElementById('emailWarningBox');
+    box.textContent = 'The reveal was recorded but the email delivery failed. Both players can still view the results via their magic links or the verification log.';
+    box.classList.add('visible');
+  }
+</script>
 </body>
 </html>

@@ -50,18 +50,36 @@ module.exports = async function handler(req, res) {
 
   const s = result.session;
 
-  // Send final reveal to all parties — non-blocking, reveal is already committed
-  sendFinalReveal({
-    p1Email:        s.p1_email,
-    p2Email:        s.p2_email,
-    observerEmails: s.observer_emails,
-    title:          s.title,
-    p1Secret:       s.p1_secret,
-    p2Secret:       s.p2_secret,
-    logToken:       s.log_token,
-    p1SubmittedAt:  s.p1_submitted_at,
-    p2SubmittedAt:  s.p2_submitted_at,
-  }).catch(() => {});
+  let emailWarning = false;
+  try {
+    await sendFinalReveal({
+      p1Email:        s.p1_email,
+      p2Email:        s.p2_email,
+      observerEmails: s.observer_emails,
+      title:          s.title,
+      p1Secret:       s.p1_secret,
+      p2Secret:       s.p2_secret,
+      logToken:       s.log_token,
+      p1SubmittedAt:  s.p1_submitted_at,
+      p2SubmittedAt:  s.p2_submitted_at,
+    });
+  } catch (err) {
+    console.error('sendFinalReveal error:', err);
+    emailWarning = true;
+  }
 
-  return res.status(200).json({ ok: true });
+  return res.status(200).json({
+    ok: true,
+    emailWarning,
+    reveal: {
+      title:         s.title,
+      logToken:      s.log_token,
+      p1Email:       s.p1_email,
+      p1Secret:      s.p1_secret,
+      p1SubmittedAt: s.p1_submitted_at,
+      p2Email:       s.p2_email,
+      p2Secret:      s.p2_secret,
+      p2SubmittedAt: s.p2_submitted_at,
+    },
+  });
 };

@@ -30,12 +30,18 @@ module.exports = async function handler(req, res) {
   if (result.error === 'expired')          return res.status(410).json({ error: 'This session has expired.' });
   if (result.error === 'already_submitted') return res.status(409).json({ error: 'You have already submitted your secret.' });
 
+  let emailWarning = false;
   if (result.revealed) {
-    sendMultiPlayerReveal({
-      participants: result.participants,
-      title:        result.title,
-      logToken:     result.logToken,
-    }).catch(err => console.error('sendMultiPlayerReveal error:', err));
+    try {
+      await sendMultiPlayerReveal({
+        participants: result.participants,
+        title:        result.title,
+        logToken:     result.logToken,
+      });
+    } catch (err) {
+      console.error('sendMultiPlayerReveal error:', err);
+      emailWarning = true;
+    }
   }
 
   const submitted = result.participants.filter(p => p.submitted_at !== null).length;
@@ -43,10 +49,11 @@ module.exports = async function handler(req, res) {
   return res.status(200).json({
     ok: true,
     status: {
-      title:    result.title,
-      logToken: result.logToken,
+      title:        result.title,
+      logToken:     result.logToken,
+      emailWarning: result.revealed ? emailWarning : undefined,
       submitted,
-      total:    result.participants.length,
+      total:        result.participants.length,
       participants: result.participants.map(p => ({
         email:     garbleEmail(p.email),
         submitted: p.submitted_at !== null,
