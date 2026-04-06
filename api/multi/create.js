@@ -1,7 +1,7 @@
 'use strict';
 
 const { createMultiSession, cleanupExpiredMulti } = require('../../lib/storage-multi');
-const { sendMultiPlayerInvite } = require('../../lib/email');
+const { sendMultiCreatorConfirmation, sendMultiPlayerInvite } = require('../../lib/email');
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -68,8 +68,10 @@ module.exports = async function handler(req, res) {
   }
 
   const sendResults = await Promise.allSettled(
-    participants.map(p =>
-      sendMultiPlayerInvite(p.email, session.title, p.token, session.expires_at, participants.length)
+    participants.map((p, i) =>
+      i === 0
+        ? sendMultiCreatorConfirmation(p.email, session.title, p.token, session.expires_at, participants.length, p.submitted_at)
+        : sendMultiPlayerInvite(p.email, session.title, p.token, session.expires_at, participants.length)
     )
   );
 

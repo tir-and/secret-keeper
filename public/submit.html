@@ -96,7 +96,7 @@
       <span class="player-label" id="p2Email"></span>
       <span class="timestamp"    id="p2SubmittedAt"></span>
     </div>
-    <div class="secret-block" id="p2Secret"></div>
+    <div class="secret-block" id="revealP2Secret"></div>
 
     <hr class="divider">
 
@@ -156,7 +156,7 @@
     document.getElementById('p1Secret').textContent       = reveal.p1Secret;
     document.getElementById('p2Email').textContent        = reveal.p2Email;
     document.getElementById('p2SubmittedAt').textContent  = 'Submitted ' + fmt(reveal.p2SubmittedAt);
-    document.getElementById('p2Secret').textContent       = reveal.p2Secret;
+    document.getElementById('revealP2Secret').textContent = reveal.p2Secret;
     document.getElementById('logLink').href               =
       '/log.html?token=' + encodeURIComponent(reveal.logToken);
 
