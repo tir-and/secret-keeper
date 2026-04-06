@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Secret Keeper — Session Created</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="page">
+
+  <header class="header">
+    <div class="header-label">Secret Keeper</div>
+    <h1>Session created</h1>
+    <p>Magic links have been sent. Each player submits their secret independently — nobody sees anyone else's until everyone has submitted.</p>
+  </header>
+
+  <div class="card">
+
+    <div class="section-label">What happens next</div>
+
+    <p style="font-size:14px; color:var(--color-text-secondary); line-height:1.7; margin-bottom:18px;">
+      <strong id="playerCount" style="color:var(--color-text-primary);"></strong> players have been sent a magic link by email.
+      Once the last player submits, everyone receives the full reveal — all secrets in a single email, with a verification log available for 14 days.
+    </p>
+
+    <hr class="divider">
+
+    <div class="section-label">Status tracking</div>
+
+    <p style="font-size:14px; color:var(--color-text-secondary); line-height:1.7; margin-bottom:18px;">
+      After submitting, the magic link doubles as a status page. Players can use it to see who has submitted and who is still waiting — no separate link needed.
+    </p>
+
+    <hr class="divider">
+
+    <a href="/" style="display:block; text-align:center; font-size:13px; color:var(--color-text-secondary); text-decoration:none; opacity:0.8;">
+      ← Back to home
+    </a>
+
+  </div>
+</div>
+
+<script>
+  const n = parseInt(new URLSearchParams(location.search).get('players') ?? '0', 10);
+  document.getElementById('playerCount').textContent = n > 0 ? n : 'All';
+</script>
+</body>
+</html>

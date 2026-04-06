@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Secret Keeper — Submit Secret</title>
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    .status-list {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 4px;
+    }
+    .status-list li {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-size: 13px;
+      padding: 7px 0;
+      border-bottom: 0.5px solid var(--color-border-tertiary);
+      color: var(--color-text-secondary);
+    }
+    .status-list li:last-child { border-bottom: none; }
+    .status-list li.done { color: var(--color-text-primary); }
+
+    .check-icon { color: #16a34a; flex-shrink: 0; }
+    .wait-icon  { color: var(--color-border-secondary); flex-shrink: 0; }
+
+    .status-summary {
+      font-size: 14px;
+      color: var(--color-text-secondary);
+      margin-bottom: 14px;
+    }
+    .poll-note {
+      font-size: 11px;
+      color: var(--color-text-secondary);
+      opacity: 0.55;
+      margin-top: 14px;
+    }
+    .reveal-note {
+      text-align: center;
+    }
+    .reveal-note p {
+      font-size: 14px;
+      color: var(--color-text-primary);
+      margin-bottom: 10px;
+    }
+    .reveal-note a {
+      font-size: 13px;
+      color: var(--color-text-secondary);
+      text-decoration: none;
+    }
+    .reveal-note a:hover { color: var(--color-text-primary); }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="header">
+    <div class="header-label">Secret Keeper</div>
+    <h1>Multi-player reveal</h1>
+    <p>Your secret is locked the moment you submit. The reveal happens automatically once all players have submitted.</p>
+  </header>
+
+  <!-- Loading -->
+  <div id="loadingCard" class="card" style="text-align:center;">
+    <p style="font-size:14px; color:var(--color-text-secondary);">Loading…</p>
+  </div>
+
+  <!-- Submit form -->
+  <div id="formCard" class="card" style="display:none;">
+
+    <div class="error-box" id="errorBox" role="alert"></div>
+
+    <div class="section-label">Session</div>
+    <p id="sessionTitle" style="font-size:14px; color:var(--color-text-primary); margin-bottom:4px;"></p>
+    <p id="expiresNote" style="font-size:12px; color:var(--color-text-secondary); opacity:0.8; margin-bottom:20px;"></p>
+
+    <hr class="divider">
+
+    <div class="section-label">Your secret</div>
+
+    <div class="field">
+      <div class="field-label">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+          <rect x="5" y="7" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.3"/>
+          <path d="M5.5 7V5.5a2.5 2.5 0 0 1 5 0V7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+        Your secret
+      </div>
+      <textarea id="secretInput" placeholder="Enter your secret here — it cannot be changed after submission."></textarea>
+      <div class="field-hint">Cannot be edited after submission — that's the point.</div>
+    </div>
+
+    <button class="btn" id="submitBtn" type="button">
+      <span>Submit my secret</span>
+      <div class="spinner"></div>
+    </button>
+
+  </div>
+
+  <!-- Status view -->
+  <div id="statusCard" class="card" style="display:none;">
+
+    <div class="section-label">Session</div>
+    <p id="statusTitle" style="font-size:14px; font-weight:500; color:var(--color-text-primary); margin-bottom:20px;"></p>
+
+    <hr class="divider">
+
+    <div class="section-label">Status</div>
+    <p class="status-summary" id="statusSummary"></p>
+    <ul class="status-list" id="statusList"></ul>
+
+    <div id="revealedSection" style="display:none;">
+      <hr class="divider">
+      <div class="reveal-note">
+        <p>All secrets revealed — check your email.</p>
+        <a id="logLink" href="#">View verification log →</a>
+      </div>
+    </div>
+
+    <p class="poll-note" id="pollNote" style="display:none;">Checking for updates every 60 seconds.</p>
+
+  </div>
+
+</div>
+
+<script>
+  const params = new URLSearchParams(location.search);
+  const token  = params.get('token') ?? '';
+
+  const loadingCard = document.getElementById('loadingCard');
+  const formCard    = document.getElementById('formCard');
+  const statusCard  = document.getElementById('statusCard');
+  const errorBox    = document.getElementById('errorBox');
+  const submitBtn   = document.getElementById('submitBtn');
+
+  let pollTimer = null;
+
+  const CHECK_SVG = `<svg class="check-icon" width="14" height="14" viewBox="0 0 16 16" fill="none">
+    <path d="M3 8.5l3.5 3.5 6.5-7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+  const WAIT_SVG = `<svg class="wait-icon" width="14" height="14" viewBox="0 0 16 16" fill="none">
+    <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/>
+    <path d="M8 5v3.5l2 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+  </svg>`;
+
+  function showError(msg) {
+    errorBox.textContent = msg;
+    errorBox.classList.add('visible');
+    errorBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function clearError() {
+    errorBox.textContent = '';
+    errorBox.classList.remove('visible');
+  }
+
+  function setLoading(on) {
+    submitBtn.classList.toggle('loading', on);
+    submitBtn.disabled = on;
+  }
+
+  function renderStatus(s) {
+    if (s.title) document.getElementById('statusTitle').textContent = s.title;
+
+    document.getElementById('statusSummary').textContent =
+      `${s.submitted} of ${s.total} players have submitted`;
+
+    const list = document.getElementById('statusList');
+    list.innerHTML = '';
+    s.participants.forEach(p => {
+      const li = document.createElement('li');
+      if (p.submitted) li.classList.add('done');
+      const icon = document.createElement('span');
+      icon.innerHTML = p.submitted ? CHECK_SVG : WAIT_SVG;
+      const label = document.createElement('span');
+      label.textContent = p.email;
+      li.appendChild(icon);
+      li.appendChild(label);
+      list.appendChild(li);
+    });
+
+    const revealedSection = document.getElementById('revealedSection');
+    const pollNote        = document.getElementById('pollNote');
+
+    if (s.logToken) {
+      revealedSection.style.display = '';
+      document.getElementById('logLink').href =
+        `/multi-log.html?token=${encodeURIComponent(s.logToken)}`;
+      pollNote.style.display = 'none';
+      stopPolling();
+    } else {
+      revealedSection.style.display = 'none';
+      pollNote.style.display = '';
+    }
+  }
+
+  function showStatusView(s) {
+    loadingCard.style.display = 'none';
+    formCard.style.display    = 'none';
+    statusCard.style.display  = '';
+    renderStatus(s);
+  }
+
+  function startPolling() {
+    if (pollTimer) return;
+    pollTimer = setInterval(async () => {
+      try {
+        const res  = await fetch('/api/multi/status/' + encodeURIComponent(token));
+        const data = await res.json();
+        if (res.ok) renderStatus(data);
+      } catch (_) {}
+    }, 60000);
+  }
+
+  function stopPolling() {
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+  }
+
+  async function init() {
+    if (!token) { window.location.href = '/expired.html'; return; }
+
+    try {
+      const res  = await fetch('/api/multi/secret/' + encodeURIComponent(token));
+      const data = await res.json();
+
+      if (!res.ok) { window.location.href = '/expired.html'; return; }
+
+      if (data.alreadySubmitted || data.sessionRevealed) {
+        if (!data.status) { window.location.reload(); return; }
+        showStatusView(data.status);
+        if (!data.status.logToken) startPolling();
+        return;
+      }
+
+      // Show form
+      loadingCard.style.display = 'none';
+      formCard.style.display    = '';
+      document.getElementById('sessionTitle').textContent = data.title;
+      if (data.expiresAt) {
+        const d = new Date(data.expiresAt);
+        document.getElementById('expiresNote').textContent =
+          'Expires ' + d.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
+      }
+    } catch (_) {
+      window.location.href = '/expired.html';
+    }
+  }
+
+  submitBtn.addEventListener('click', async () => {
+    clearError();
+    const secret = document.getElementById('secretInput').value.trim();
+    if (!secret) return showError('Please enter your secret.');
+
+    setLoading(true);
+    try {
+      const res  = await fetch('/api/multi/submit', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ token, secret }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        if (res.status === 404 || res.status === 410) {
+          window.location.href = '/expired.html';
+          return;
+        }
+        // 409 already_submitted — show status view
+        if (res.status === 409) {
+          const sr = await fetch('/api/multi/status/' + encodeURIComponent(token)).catch(() => null);
+          if (sr?.ok) {
+            const sd = await sr.json();
+            showStatusView(sd);
+            if (!sd.logToken) startPolling();
+          } else {
+            showError(data.error ?? 'You have already submitted your secret.');
+          }
+          return;
+        }
+        return showError(data.error ?? 'Something went wrong. Please try again.');
+      }
+
+      showStatusView(data.status);
+      if (!data.status.logToken) startPolling();
+
+    } catch (_) {
+      showError('Network error. Please check your connection and try again.');
+    } finally {
+      setLoading(false);
+    }
+  });
+
+  init();
+</script>
+</body>
+</html>

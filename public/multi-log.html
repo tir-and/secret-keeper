@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Secret Keeper — Verification Log</title>
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    .secret-block {
+      background: var(--color-background-tertiary);
+      border: 0.5px solid var(--color-border-tertiary);
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 14px;
+      color: var(--color-text-primary);
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.6;
+    }
+    .meta-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-bottom: 8px;
+    }
+    .meta-row .player-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--color-text-primary);
+    }
+    .meta-row .timestamp {
+      font-size: 12px;
+      color: var(--color-text-secondary);
+      opacity: 0.8;
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="header">
+    <div class="header-label">Secret Keeper</div>
+    <h1>Verification log</h1>
+    <p>All secrets are shown as committed. No secret was visible to any other player until everyone had submitted.</p>
+  </header>
+
+  <div id="loadingCard" class="card" style="text-align:center;">
+    <p style="font-size:14px; color:var(--color-text-secondary);">Loading…</p>
+  </div>
+
+  <div id="errorCard" class="card" style="display:none;">
+    <div class="error-box visible" id="errorMsg" role="alert"></div>
+    <a href="/" style="display:block; text-align:center; font-size:13px; color:var(--color-text-secondary); text-decoration:none; opacity:0.8; margin-top:4px;">
+      Create a new session
+    </a>
+  </div>
+
+  <div id="logCard" class="card" style="display:none;">
+
+    <div class="section-label">Session</div>
+    <p id="logTitle" style="font-size:15px; font-weight:500; color:var(--color-text-primary); margin-bottom:20px;"></p>
+
+    <div id="secretsContainer"></div>
+
+    <hr class="divider">
+
+    <div class="section-label">Integrity</div>
+    <p style="font-size:13px; color:var(--color-text-secondary); line-height:1.7;">
+      Each player's secret was committed independently at submission time. No secret was visible to any other player until all had submitted.
+    </p>
+
+  </div>
+</div>
+
+<script>
+  const params   = new URLSearchParams(location.search);
+  const logToken = params.get('token') ?? '';
+
+  function fmt(iso) {
+    if (!iso) return '';
+    return new Date(iso).toLocaleString(undefined, {
+      month: 'long', day: 'numeric', year: 'numeric',
+      hour: 'numeric', minute: '2-digit',
+    });
+  }
+
+  function showError(msg) {
+    document.getElementById('loadingCard').style.display = 'none';
+    document.getElementById('errorMsg').textContent     = msg;
+    document.getElementById('errorCard').style.display  = '';
+  }
+
+  async function loadLog() {
+    if (!logToken) { showError('No log token provided.'); return; }
+
+    try {
+      const res  = await fetch('/api/multi/log/' + encodeURIComponent(logToken));
+      const data = await res.json();
+
+      if (!res.ok) { showError(data.error ?? 'This log is unavailable or has expired.'); return; }
+
+      document.getElementById('logTitle').textContent = data.title;
+
+      const container = document.getElementById('secretsContainer');
+      data.participants.forEach((p, i) => {
+        if (i > 0) {
+          const hr = document.createElement('hr');
+          hr.className = 'divider';
+          container.appendChild(hr);
+        }
+
+        const label = document.createElement('div');
+        label.className = 'section-label';
+        label.textContent = `Player ${p.position} secret`;
+        container.appendChild(label);
+
+        const meta = document.createElement('div');
+        meta.className = 'meta-row';
+        const playerLabel = document.createElement('span');
+        playerLabel.className = 'player-label';
+        playerLabel.textContent = p.email;
+        const timestamp = document.createElement('span');
+        timestamp.className = 'timestamp';
+        timestamp.textContent = 'Submitted ' + fmt(p.submittedAt);
+        meta.appendChild(playerLabel);
+        meta.appendChild(timestamp);
+        container.appendChild(meta);
+
+        const block = document.createElement('div');
+        block.className = 'secret-block';
+        block.textContent = p.secret;
+        container.appendChild(block);
+      });
+
+      document.getElementById('loadingCard').style.display = 'none';
+      document.getElementById('logCard').style.display     = '';
+
+    } catch (_) {
+      showError('Network error. Please check your connection and try again.');
+    }
+  }
+
+  loadLog();
+</script>
+</body>
+</html>

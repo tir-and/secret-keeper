@@ -8,7 +8,7 @@ Hosted on Vercel. No user accounts; all access via magic links.
 ## Stack
 - Frontend: static HTML/CSS/JS in `/public` — no framework
 - API: Vercel serverless functions in `/api`
-- Storage: Vercel Postgres via `@vercel/postgres`
+- Storage: Neon Postgres via `@neondatabase/serverless` — connects via `DATABASE_URL`
 - Email: Resend via `resend` npm package
 - Font: Calibri / Segoe UI — keep it simple, no web fonts
 
@@ -66,5 +66,6 @@ Hosted on Vercel. No user accounts; all access via magic links.
 ## Environment variables (set in Vercel dashboard)
 - `RESEND_API_KEY` — Resend API key
 - `FROM_EMAIL` — verified sender address
+- `SITE_URL` — set to `https://secretkeeper.win` so emails link to the custom domain
 - `VERCEL_URL` — auto-set by Vercel, do not override
-- `POSTGRES_*` — auto-injected by Vercel when Postgres is linked
+- `DATABASE_URL` — Neon connection string (set when Neon integration is linked)
