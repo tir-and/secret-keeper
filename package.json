@@ -2,6 +2,9 @@
   "name": "pbem-secret-keeper",
   "version": "1.0.0",
   "private": true,
+  "scripts": {
+    "migrate": "node scripts/migrate.js"
+  },
   "dependencies": {
     "@neondatabase/serverless": "^0.10.0",
     "resend": "^4.0.0"

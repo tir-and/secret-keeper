@@ -1,6 +1,6 @@
 'use strict';
 
-const { getMultiSessionByLogToken, garbleEmail } = require('../../../lib/storage-multi');
+const { getMultiSessionByLogToken } = require('../../../lib/storage-multi');
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -21,11 +21,5 @@ module.exports = async function handler(req, res) {
     return res.status(404).json({ error: 'This log is unavailable or has expired.' });
   }
 
-  return res.status(200).json({
-    title: session.title,
-    participants: session.participants.map(p => ({
-      ...p,
-      email: garbleEmail(p.email),
-    })),
-  });
+  return res.status(200).json(session);
 };

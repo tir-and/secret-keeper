@@ -81,7 +81,7 @@
     <div class="section-label">Your secret</div>
 
     <div class="field">
-      <textarea id="secretInput" placeholder="Enter your secret here — it cannot be changed after submission."></textarea>
+      <textarea id="secretInput" placeholder="Enter your secret here — it cannot be changed after submission." maxlength="2000"></textarea>
       <div class="field-hint">Cannot be edited after submission — that's the point.</div>
     </div>
 
@@ -113,7 +113,7 @@
       </div>
     </div>
 
-    <p class="poll-note" id="pollNote" style="display:none;">Checking for updates every 60 seconds.</p>
+    <p class="poll-note" id="pollNote" style="display:none;">Checking for updates every 10 minutes.</p>
 
   </div>
 
@@ -214,7 +214,7 @@
         const data = await res.json();
         if (res.ok) renderStatus(data);
       } catch (_) {}
-    }, 60000);
+    }, 600000);
   }
 
   function stopPolling() {

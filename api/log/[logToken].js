@@ -1,11 +1,7 @@
 'use strict';
 
 const { getSessionByLogToken } = require('../../lib/storage');
-
-function garbleEmail(email) {
-  const [local] = email.split('@');
-  return `${local}@xxxxxx`;
-}
+const { garbleEmail } = require('../../lib/garble');
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'GET') {

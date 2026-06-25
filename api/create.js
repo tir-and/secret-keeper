@@ -1,7 +1,8 @@
 'use strict';
 
-const { createSession, cleanupExpired } = require('../lib/storage');
+const { createSession, deleteSession, cleanupExpired } = require('../lib/storage');
 const { sendP1Confirmation, sendP2InviteTo, sendObserverNotification } = require('../lib/email');
+const { getClientIp, checkIpRateLimit, checkRecipientRateLimits, recordRateEvents, pruneOldRateEvents } = require('../lib/ratelimit');
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -13,17 +14,29 @@ module.exports = async function handler(req, res) {
   if (!title || typeof title !== 'string' || !title.trim()) {
     return res.status(400).json({ error: 'Session title is required.' });
   }
+  if (title.trim().length > 120) {
+    return res.status(400).json({ error: 'Session title must be 120 characters or fewer.' });
+  }
   if (!p1Secret || typeof p1Secret !== 'string' || !p1Secret.trim()) {
     return res.status(400).json({ error: 'Your secret is required.' });
   }
+  if (p1Secret.trim().length > 2000) {
+    return res.status(400).json({ error: 'Secret must be 2000 characters or fewer.' });
+  }
   if (!p1Email || typeof p1Email !== 'string' || !p1Email.trim()) {
     return res.status(400).json({ error: 'Your email address is required.' });
+  }
+  if (p1Email.trim().length > 254) {
+    return res.status(400).json({ error: 'Email address is too long.' });
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p1Email.trim())) {
     return res.status(400).json({ error: 'Please enter a valid email address.' });
   }
   if (!p2Email || typeof p2Email !== 'string' || !p2Email.trim()) {
     return res.status(400).json({ error: "Respondent's email address is required." });
+  }
+  if (p2Email.trim().length > 254) {
+    return res.status(400).json({ error: "Respondent's email address is too long." });
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p2Email.trim())) {
     return res.status(400).json({ error: "Please enter a valid email address for the respondent." });
@@ -35,9 +48,29 @@ module.exports = async function handler(req, res) {
   const observerEmails = typeof observerEmailsRaw === 'string'
     ? observerEmailsRaw.split(',').map((e) => e.trim()).filter(Boolean)
     : [];
+  if (observerEmails.length > 10) {
+    return res.status(400).json({ error: 'Maximum 10 observers allowed.' });
+  }
+  for (const email of observerEmails) {
+    if (email.length > 254) {
+      return res.status(400).json({ error: 'Observer email address is too long.' });
+    }
+  }
+
+  // Rate limiting
+  const ip = getClientIp(req);
+  if (await checkIpRateLimit(ip, 10)) {
+    return res.status(429).json({ error: 'Too many sessions created from this address. Please try again tomorrow.' });
+  }
+  const recipients = [p2Email.trim().toLowerCase(), ...observerEmails.map(e => e.toLowerCase())];
+  const blockedRecipient = await checkRecipientRateLimits(recipients, 20);
+  if (blockedRecipient) {
+    return res.status(429).json({ error: 'Too many invites sent to one or more recipients. Please try again tomorrow.' });
+  }
 
   // Non-blocking cleanup
   cleanupExpired().catch(() => {});
+  pruneOldRateEvents().catch(() => {});
 
   let session;
   try {
@@ -54,13 +87,17 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: 'Failed to create session. Please try again.' });
   }
 
-  // Send P2 invite — critical: surface failure to the user
+  // Send P2 invite — critical: delete session and ask to retry on failure so there are no orphaned sessions
   try {
     await sendP2InviteTo(session.p2_email, session.title, session.p2_token, session.expires_at);
   } catch (err) {
     console.error('sendP2InviteTo error:', err);
-    return res.status(500).json({ error: 'Session created but failed to send invite email. Please try again.' });
+    deleteSession(session.id).catch(() => {});
+    return res.status(500).json({ error: 'Failed to send invite email. Please try again.' });
   }
+
+  // Record rate events after confirmed success
+  recordRateEvents(ip, recipients).catch(() => {});
 
   // Non-critical emails: fire and forget
   sendP1Confirmation(session.p1_email, session.title, session.p1_submitted_at).catch(() => {});

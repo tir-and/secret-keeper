@@ -16,6 +16,9 @@ module.exports = async function handler(req, res) {
   if (!p2Secret || typeof p2Secret !== 'string' || !p2Secret.trim()) {
     return res.status(400).json({ error: 'Your secret is required.' });
   }
+  if (p2Secret.trim().length > 2000) {
+    return res.status(400).json({ error: 'Secret must be 2000 characters or fewer.' });
+  }
 
   // Non-blocking cleanup
   cleanupExpired().catch(() => {});

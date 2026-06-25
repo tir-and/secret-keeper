@@ -2,6 +2,7 @@
 
 const { createMultiSession, cleanupExpiredMulti } = require('../../lib/storage-multi');
 const { sendMultiCreatorConfirmation, sendMultiPlayerInvite } = require('../../lib/email');
+const { getClientIp, checkIpRateLimit, checkRecipientRateLimits, recordRateEvents, pruneOldRateEvents } = require('../../lib/ratelimit');
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -15,11 +16,20 @@ module.exports = async function handler(req, res) {
   if (!title || typeof title !== 'string' || !title.trim()) {
     return res.status(400).json({ error: 'Session title is required.' });
   }
+  if (title.trim().length > 120) {
+    return res.status(400).json({ error: 'Session title must be 120 characters or fewer.' });
+  }
   if (!creatorSecret || typeof creatorSecret !== 'string' || !creatorSecret.trim()) {
     return res.status(400).json({ error: 'Your secret is required.' });
   }
+  if (creatorSecret.trim().length > 2000) {
+    return res.status(400).json({ error: 'Secret must be 2000 characters or fewer.' });
+  }
   if (!creatorEmail || typeof creatorEmail !== 'string' || !creatorEmail.trim()) {
     return res.status(400).json({ error: 'Your email address is required.' });
+  }
+  if (creatorEmail.trim().length > 254) {
+    return res.status(400).json({ error: 'Email address is too long.' });
   }
   const cleanedCreator = creatorEmail.trim().toLowerCase();
   if (!EMAIL_RE.test(cleanedCreator)) {
@@ -39,6 +49,9 @@ module.exports = async function handler(req, res) {
     if (!cleanedOthers[i]) {
       return res.status(400).json({ error: `Player ${i + 2} email is required.` });
     }
+    if (cleanedOthers[i].length > 254) {
+      return res.status(400).json({ error: `Player ${i + 2} email address is too long.` });
+    }
     if (!EMAIL_RE.test(cleanedOthers[i])) {
       return res.status(400).json({ error: `Player ${i + 2} has an invalid email address.` });
     }
@@ -53,7 +66,18 @@ module.exports = async function handler(req, res) {
     seen.add(email);
   }
 
+  // Rate limiting
+  const ip = getClientIp(req);
+  if (await checkIpRateLimit(ip, 10)) {
+    return res.status(429).json({ error: 'Too many sessions created from this address. Please try again tomorrow.' });
+  }
+  const blockedRecipient = await checkRecipientRateLimits(allEmails, 20);
+  if (blockedRecipient) {
+    return res.status(429).json({ error: 'Too many invites sent to one or more recipients. Please try again tomorrow.' });
+  }
+
   cleanupExpiredMulti().catch(() => {});
+  pruneOldRateEvents().catch(() => {});
 
   let session, participants;
   try {
@@ -82,6 +106,9 @@ module.exports = async function handler(req, res) {
   if (emailFailures.length > 0) {
     console.error('sendMultiPlayerInvite failed for:', emailFailures);
   }
+
+  // Record rate events after confirmed session creation
+  recordRateEvents(ip, allEmails).catch(() => {});
 
   return res.status(200).json({
     playerCount: participants.length,

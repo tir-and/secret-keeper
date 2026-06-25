@@ -1,6 +1,7 @@
 'use strict';
 
-const { submitMultiSecret, garbleEmail } = require('../../lib/storage-multi');
+const { submitMultiSecret } = require('../../lib/storage-multi');
+const { garbleEmail } = require('../../lib/garble');
 const { sendMultiPlayerReveal } = require('../../lib/email');
 
 module.exports = async function handler(req, res) {
@@ -15,6 +16,9 @@ module.exports = async function handler(req, res) {
   }
   if (!secret || typeof secret !== 'string' || !secret.trim()) {
     return res.status(400).json({ error: 'Your secret is required.' });
+  }
+  if (secret.trim().length > 2000) {
+    return res.status(400).json({ error: 'Secret must be 2000 characters or fewer.' });
   }
 
   let result;

@@ -27,7 +27,7 @@
     <div class="section-label">Game context</div>
 
     <div class="field">
-      <input type="text" id="title" placeholder="Session title — e.g. Twilight Imperium Round 4 — Strategy Cards" autocomplete="off">
+      <input type="text" id="title" placeholder="Session title — e.g. Twilight Imperium Round 4 — Strategy Cards" autocomplete="off" maxlength="120">
     </div>
 
     <hr class="divider">
@@ -36,7 +36,7 @@
     <div class="section-label">Your secret</div>
 
     <div class="field">
-      <textarea id="p1Secret" placeholder="Enter your secret here — it's locked the moment you submit and cannot be changed."></textarea>
+      <textarea id="p1Secret" placeholder="Enter your secret here — it's locked the moment you submit and cannot be changed." maxlength="2000"></textarea>
       <div class="field-hint">Cannot be edited after submission — that's the point.</div>
     </div>
 
@@ -53,7 +53,7 @@
         </svg>
         Your email
       </div>
-      <input type="email" id="p1Email" placeholder="you@example.com" autocomplete="email">
+      <input type="email" id="p1Email" placeholder="you@example.com" autocomplete="email" maxlength="254">
       <div class="field-hint">You'll receive a timestamped receipt confirming your secret is sealed.</div>
     </div>
 
@@ -66,7 +66,7 @@
         </svg>
         Respondent's email
       </div>
-      <input type="email" id="p2Email" placeholder="opponent@example.com" autocomplete="off">
+      <input type="email" id="p2Email" placeholder="opponent@example.com" autocomplete="off" maxlength="254">
       <div class="field-hint">They receive a magic link to submit their secret. If no response after 7 days the secret keeper is deleted.</div>
     </div>
 
@@ -80,7 +80,7 @@
         Observer emails
         <span class="optional">(optional)</span>
       </div>
-      <input type="text" id="observerEmailsRaw" placeholder="referee@example.com, judge@example.com" autocomplete="off">
+      <input type="text" id="observerEmailsRaw" placeholder="referee@example.com, judge@example.com" autocomplete="off" maxlength="2794">
       <div class="field-hint">Comma-separated. Observers receive the final reveal but cannot submit secrets.</div>
     </div>
 

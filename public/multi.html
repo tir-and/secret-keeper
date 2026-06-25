@@ -84,7 +84,7 @@
     <div class="section-label">Game context</div>
 
     <div class="field">
-      <input type="text" id="title" placeholder="Session title — e.g. Empires in Arms — Round 3 country bids" autocomplete="off">
+      <input type="text" id="title" placeholder="Session title — e.g. Empires in Arms — Round 3 country bids" autocomplete="off" maxlength="120">
     </div>
 
     <hr class="divider">
@@ -92,7 +92,7 @@
     <div class="section-label">Your secret</div>
 
     <div class="field">
-      <textarea id="creatorSecret" placeholder="Enter your secret here — it's locked the moment you submit and cannot be changed."></textarea>
+      <textarea id="creatorSecret" placeholder="Enter your secret here — it's locked the moment you submit and cannot be changed." maxlength="2000"></textarea>
       <div class="field-hint">Cannot be edited after submission — that's the point.</div>
     </div>
 
@@ -101,7 +101,7 @@
     <div class="section-label">Participants</div>
 
     <div class="field">
-      <input type="email" id="creatorEmail" placeholder="Your email — you@example.com" autocomplete="email">
+      <input type="email" id="creatorEmail" placeholder="Your email — you@example.com" autocomplete="email" maxlength="254">
       <div class="field-hint">You'll receive a magic link to track session status.</div>
     </div>
 
@@ -147,7 +147,7 @@
     row.className = 'player-row';
     row.innerHTML = `
       <button class="trash-btn" type="button" aria-label="Remove player">${TRASH_SVG}</button>
-      <input type="email" class="player-email" placeholder="player${n}@example.com" autocomplete="off">
+      <input type="email" class="player-email" placeholder="player${n}@example.com" autocomplete="off" maxlength="254">
     `;
     row.querySelector('.trash-btn').addEventListener('click', () => {
       row.remove();
